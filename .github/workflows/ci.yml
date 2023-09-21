@@ -11,7 +11,7 @@ jobs:
       matrix:
         # Zlib in Toit is not available on these platforms yet.
         #os: [ ubuntu-latest, windows-latest, macos-latest ]
-        #os: [ ubuntu-latest ]
+        os: [ ubuntu-latest ]
 
     runs-on: ${{ matrix.os }}
 
