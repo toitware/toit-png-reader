@@ -9,7 +9,7 @@ import encoding.json
 import png-reader show *
 
 main:
-  dir := DirectoryStream "third_party/pngsuite/png"
+  dir := DirectoryStream "tests/third_party/pngsuite/png"
   counter := 0
   while filename := dir.next:
     if filename.ends-with ".png":
@@ -19,10 +19,10 @@ main:
         continue  // Interlaced PNGs.
       print "$counter: $filename"
       counter++
-      png := Png.from-file "third_party/pngsuite/png/$filename"
+      png := Png.from-file "tests/third_party/pngsuite/png/$filename"
       print png
       root := filename[..filename.size - 4]
-      json-file := "third_party/pngsuite/json/$(root).json"
+      json-file := "tests/third_party/pngsuite/json/$(root).json"
       if not file.is-file json-file:
         continue  // No JSON file
       truncate := root.ends-with "16"

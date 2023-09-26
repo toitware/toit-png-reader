@@ -1,4 +1,4 @@
-# Copyright (C) 2022 Toitware ApS.
+# Copyright (C) 2023 Toitware ApS.
 # Use of this source code is governed by a Zero-Clause BSD license that can
 # be found in the tests/LICENSE file.
 
@@ -13,7 +13,7 @@ message("TPKG: ${TPKG_EXEC}")
 add_custom_target(
   "install-pkgs"
   COMMAND "${TPKG_EXEC}" install
-  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 include(ProcessorCount)
@@ -39,8 +39,8 @@ foreach(file ${TESTS})
 
   add_test(
     NAME "${test_name}"
-    COMMAND "${TOIT_EXEC}" "${file}"
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMAND "${TOIT_EXEC}" "tests/${file}"
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
   )
 
   if ("${file}" MATCHES "slow.toit")
