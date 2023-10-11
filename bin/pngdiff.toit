@@ -44,11 +44,11 @@ main args/List:
           cli.Flag "quiet"
               --short-name="q"
               --default=false
-              --short-help="Do not produce a diff file, just return the exit code",
+              --short-help="Do not write messages to stderr, just return the exit code.",
           cli.Option "out"
               --short-name="o"
               --default=""
-              --short-help="Output (default no output file)"
+              --short-help="Output (default no output file)."
               --type="file",
           cli.Flag "version"
               --short-name="v"
@@ -57,16 +57,16 @@ main args/List:
           cli.Flag "debug-stack-traces"
               --short-name="d"
               --default=false
-              --short-help="Dump developer-friendly stack traces on error",
+              --short-help="Dump developer-friendly stack traces on error.",
           ]
       --rest=[
           cli.Option "file1"
               --default="-"
-              --short-help="PNG file input (default stdin)"
+              --short-help="PNG file input (default stdin)."
               --type="file",
           cli.Option "file2"
               --default="-"
-              --short-help="PNG file input (default stdin)"
+              --short-help="PNG file input (default stdin)."
               --type="file",
           ]
       --run= :: diff it
@@ -107,7 +107,7 @@ diff parsed -> none:
     exit 1
 
   w := png1.width
-  for y := 0; y < png1.height; y++:
+  for y := 0; (not quiet) and y < png1.height; y++:
     line1 := png1.image-data[w * 4 * y .. w * 4 * (y + 1)]
     line2 := png2.image-data[w * 4 * y .. w * 4 * (y + 1)]
     if line1 != line2:
