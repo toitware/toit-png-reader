@@ -1,8 +1,8 @@
 // Copyright (C) 2023 Toitware ApS. All rights reserved.
 
 /**
-This file is automatically overwritten by the build system.
-It is ignored by git.
+This .toit file is automatically overwritten by the build system,
+based on the version.toit.in file.  It is ignored by git.
 */
 
 /**

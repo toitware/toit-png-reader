@@ -1,3 +1,7 @@
+// Copyright (C) 2023 Toitware ApS. All rights reserved.
+// Use of this source code is governed by an MIT-style license that can be
+// found in the LICENSE file.
+
 import binary
 import binary show BIG-ENDIAN
 import bitmap
@@ -47,8 +51,8 @@ main args/List:
               --short-help="Do not write messages to stderr, just return the exit code.",
           cli.Option "out"
               --short-name="o"
-              --default=""
-              --short-help="Output (default no output file)."
+              --default=null
+              --short-help="Output (default: no output file)."
               --type="file",
           cli.Flag "version"
               --short-name="v"
@@ -61,12 +65,12 @@ main args/List:
           ]
       --rest=[
           cli.Option "file1"
-              --default="-"
-              --short-help="PNG file input (default stdin)."
+              --required
+              --short-help="PNG file input 1."
               --type="file",
           cli.Option "file2"
               --default="-"
-              --short-help="PNG file input (default stdin)."
+              --short-help="PNG file input 2."
               --type="file",
           ]
       --run= :: diff it
@@ -124,58 +128,60 @@ diff parsed -> none:
             pipe.stderr.write "  $file2-name: $(%06x pixel2) (alpha $(%02x alpha2))\n"
           break
 
-  if parsed["out"] != "":
-    out-stream := parsed["out"] == "-" ?
-        pipe.stdout :
-        file.Stream.for-write parsed["out"]
-    diff-image := ByteArray png1.image-data.size
-    // Make all pixels darker.
+  if not parsed["out"]:
+    exit 1
+
+  out-stream := parsed["out"] == "-" ?
+      pipe.stdout :
+      file.Stream.for-write parsed["out"]
+  diff-image := ByteArray png1.image-data.size
+  // Make all pixels darker.
+  bitmap.blit
+      png1.image-data  // Source.
+      diff-image       // Destination.
+      3                // Pixels per line (skip alpha bytes).
+      --source-line-stride=4
+      --destination-line-stride=4
+      --shift=2
+      --mask=0x3f
+  // Copy over the alphas unchanged.
+  bitmap.blit
+      png1.image-data[3..]  // Source.
+      diff-image[3..]       // Destination.
+      png1.width            // Pixels per line.
+      --source-pixel-stride=4
+      --destination-pixel-stride=4
+  // Make an array that is non-zero in all the places where the pixels
+  // differ.
+  xored := png1.image-data.copy
+  bitmap.blit
+      png2.image-data  // Source.
+      xored            // Destination.
+      png1.width * 4   // Line length.
+      --operation=bitmap.XOR
+  // Makes the pixels that differ very bright in the components that differ.
+  bitmap.blit
+      xored            // Source.
+      diff-image       // Destination.
+      png1.width * 4   // Line length.
+      --operation=bitmap.OR
+      --lookup-table=MAX-OUT
+  3.repeat: | component |
+    // For all pixels that differ, set the opacity to 100%.
     bitmap.blit
-        png1.image-data  // Source.
-        diff-image       // Destination.
-        3                // Pixels per line (skip alpha bytes).
-        --source-line-stride=4
-        --destination-line-stride=4
-        --shift=2
-        --mask=0x3f
-    // Copy over the alphas unchanged.
-    bitmap.blit
-        png1.image-data[3..]  // Source.
-        diff-image[3..]       // Destination.
-        png1.width            // Pixels per line.
+        xored[component..]  // Source, starting at r, g, or b.
+        diff-image[3..]     // Destination, starting at an alpha byte.
+        png1.width          // Line length.
         --source-pixel-stride=4
         --destination-pixel-stride=4
-    // Make an array that is non-zero in all the places where the pixels
-    // differ.
-    xored := png1.image-data.copy
-    bitmap.blit
-        png2.image-data  // Source.
-        xored            // Destination.
-        png1.width * 4   // Line length.
-        --operation=bitmap.XOR
-    // Makes the pixels that differ very bright in the components that differ.
-    bitmap.blit
-        xored            // Source.
-        diff-image       // Destination.
-        png1.width * 4   // Line length.
         --operation=bitmap.OR
         --lookup-table=MAX-OUT
-    3.repeat: | component |
-      // For all pixels that differ, set the opacity to 100%.
-      bitmap.blit
-          xored[component..]  // Source, starting at r, g, or b.
-          diff-image[3..]     // Destination, starting at an alpha byte.
-          png1.width          // Line length.
-          --source-pixel-stride=4
-          --destination-pixel-stride=4
-          --operation=bitmap.OR
-          --lookup-table=MAX-OUT
 
-    writer := PngWriter out-stream png1.width png1.height
-    List.chunk-up 0 diff-image.size (png1.width * 4): | from to length |
-      writer.write-uncompressed #[0]  // Filter type 0.
-      writer.write-uncompressed diff-image[from..to]
-    writer.close
+  writer := PngWriter out-stream png1.width png1.height
+  List.chunk-up 0 diff-image.size (png1.width * 4): | from to length |
+    writer.write-uncompressed #[0]  // Filter type 0.
+    writer.write-uncompressed diff-image[from..to]
+  writer.close
 
   exit 1
 
